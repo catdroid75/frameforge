@@ -20,15 +20,21 @@ def validate_spec(spec,allowed,encoders,source=None):
 
 def compile_audio(o,streams,allowed,encoders):
     mode=o.get('audioMode','global'); tracks=o.get('audioTracks','all'); codec=o.get('audio','aac')
-    if mode not in ('global','perTrack') or tracks not in ('first','all'): raise ValueError('Invalid audio mode')
+    if mode not in ('global','perTrack') or tracks not in ('first','all','selected'): raise ValueError('Invalid audio mode')
     sources=[s for s in (streams or []) if s.get('codec_type')=='audio']; mapped=[]
     if mode=='global':
         if codec=='none': return [],['-an']
+        selected=o.get('audioSelected',[])
+        if tracks=='selected' and (not isinstance(selected,list) or not 1<=len(selected)<=64 or any(type(i) is not int or not 0<=i<64 for i in selected) or len(set(selected))!=len(selected)):
+            raise ValueError('Select at least one unique audio track (positions 1–64), or choose All/First')
         spec=validate_spec(dict(codec=codec,bitrate=o.get('bitrate','192'),channels=o.get('channels','original')),allowed,encoders)
         if streams is None:
             # During queue validation there is no media inspection yet.
-            return ['-map','0:a?' if tracks=='all' else '0:a:0?'],spec_args(spec,'a')
-        for i,s in enumerate(sources if tracks=='all' else sources[:1]): mapped.append((i,validate_spec(spec,allowed,encoders,s),s))
+            return ([item for i in sorted(selected) for item in ('-map',f'0:a:{i}')] if tracks=='selected' else ['-map','0:a?' if tracks=='all' else '0:a:0?']),spec_args(spec,'a')
+        indices=sorted(selected) if tracks=='selected' else range(len(sources)) if tracks=='all' else range(min(1,len(sources)))
+        if any(i>=len(sources) for i in indices): raise ValueError('A selected audio track is missing from this file. Inspect the source layout and adjust the selection.')
+        for i in indices:
+            source=sources[i];mapped.append((i,validate_spec(spec,allowed,encoders,source),source))
     else:
         plan=o.get('audioPlan',[]); fallback=o.get('audioFallback','copy')
         if not isinstance(plan,list) or len(plan)>64 or fallback not in ('copy','drop'): raise ValueError('Invalid per-track audio plan')

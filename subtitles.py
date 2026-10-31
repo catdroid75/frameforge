@@ -7,11 +7,34 @@ BITMAP={'hdmv_pgs_subtitle','dvd_subtitle','dvb_subtitle','xsub'}
 @lru_cache(maxsize=1)
 def capabilities():
     p=subprocess.run(['ffmpeg','-hide_banner','-filters'],capture_output=True,text=True,timeout=10)
-    return {'textBurn':bool(re.search(r'^\s*[TSC\.\|]{3}\s+subtitles\s',p.stdout,re.M)),'bitmapBurn':bool(re.search(r'^\s*[TSC\.\|]{3}\s+overlay\s',p.stdout,re.M)) and bool(re.search(r'^\s*[TSC\.\|]{3}\s+scale2ref\s',p.stdout,re.M))}
+    output=p.stdout+'\n'+p.stderr
+    if p.returncode: raise ValueError('Could not query FFmpeg filters: '+p.stderr[-1000:])
+    return {'textBurn':bool(re.search(r'^\s*[TSC\.\|]{2,3}\s+subtitles\s',output,re.M)),'bitmapBurn':bool(re.search(r'^\s*[TSC\.\|]{2,3}\s+overlay\s',output,re.M)) and bool(re.search(r'^\s*[TSC\.\|]{2,3}\s+scale2ref\s',output,re.M))}
+
+# Recognized language tags only: und/mul/zxx and unsupported tags stay unknown.
+LANG2=set('aa ab ae af ak am an ar as av ay az ba be bg bh bi bm bn bo br bs ca ce ch co cr cs cu cv cy da de dv dz ee el en eo es et eu fa ff fi fj fo fr fy ga gd gl gn gu gv ha he hi ho hr ht hu hy hz ia id ie ig ii ik io is it iu ja jv ka kg ki kj kk kl km kn ko kr ks ku kv kw ky la lb lg li ln lo lt lu lv mg mh mi mk ml mn mr ms mt my na nb nd ne ng nl nn no nr nv ny oc oj om or os pa pi pl ps pt qu rm rn ro ru rw sa sc sd se sg si sk sl sm sn so sq sr ss st su sv sw ta te tg th ti tk tl tn to tr ts tt tw ty ug uk ur uz ve vi vo wa wo xh yi yo za zh zu'.split())
+LANG3=set('aar abk afr alb sqi amh ara arm hye aze baq eus bel ben bos bul bur mya cat ces cze chi zho cym wel dan deu ger div dut nld ell gre eng epo est fao fas per fin fra fre fry gla gle glg guj hat hau heb hin hrv hun ice isl ido ind ina iku jav jpn kan kas kat geo kaz khm kir kor kur lao lat lav lit ltz lug mal mar may msa mkd mac mlt mon mri mao nep nob nno nor oci ori pan pol por pus roh ron rum rus san sin slk slo slv sme som spa srp sun swa swe tam tel tgk tha tib bod tir tuk tur uig ukr urd uzb vie yid yor zul'.split())
+
+def language_kind(value):
+    value=str(value or '').strip().lower().replace('_','-').split('-')[0]
+    if value in ('en','eng','english'):return 'english'
+    return 'foreign' if value in LANG2 or value in LANG3 else 'unknown'
+
+def english_for_foreign(streams):
+    audio=next((s for s in streams if s.get('codec_type')=='audio'),None)
+    if audio is None:return [],'No source audio track found; no conditional subtitles added.'
+    kind=language_kind(audio.get('tags',{}).get('language'))
+    if kind=='english':return [],'First source audio track is English; no conditional subtitles added.'
+    if kind=='unknown':return [],'First source audio language is unknown/untagged; no conditional subtitles added. Use explicit subtitle selection if needed.'
+    candidates=[(i,s) for i,s in enumerate(s for s in streams if s.get('codec_type')=='subtitle') if language_kind(s.get('tags',{}).get('language'))=='english']
+    if not candidates:return [],'First source audio is foreign, but no tagged English subtitle track exists. No subtitles were added; no translation/download was performed.'
+    # Prefer a full subtitle track over forced-only dialogue, then source default.
+    index,source=min(candidates,key=lambda item:(bool(item[1].get('disposition',{}).get('forced')),not bool(item[1].get('disposition',{}).get('default')),item[0]))
+    return [dict(source=index,include=True,default=True)],f'First source audio is foreign; included English subtitle track {index+1} as the default.'
 
 def compile_plan(o,streams=None):
     mode=o.get('subtitles','none');fmt=o.get('format','mp4');plan=o.get('subtitlePlan',[])
-    if mode not in ('none','forced','all','custom'): raise ValueError('Invalid subtitle mode')
+    if mode not in ('none','forced','all','custom','englishForeign'): raise ValueError('Invalid subtitle mode')
     if mode=='custom':
         if not isinstance(plan,list) or len(plan)>64: raise ValueError('At most 64 subtitle track rules')
         seen=set();defaults=0
@@ -28,11 +51,12 @@ def compile_plan(o,streams=None):
             defaults+=bool(rule.get('include') and rule.get('default'))
             if rule.get('burn') and o.get('video','libx264')=='copy': raise ValueError('Burned subtitles require video re-encoding')
         if defaults>1: raise ValueError('Choose only one default soft subtitle track')
-    if fmt=='avi' and (mode in ('all','forced') or mode=='custom' and any(x.get('include') for x in plan)): raise ValueError('AVI cannot contain these soft subtitles. Choose MKV, or use burn-only subtitles.')
+    if fmt=='avi' and (mode in ('all','forced','englishForeign') or mode=='custom' and any(x.get('include') for x in plan)): raise ValueError('AVI cannot contain these soft subtitles. Choose MKV, or use burn-only subtitles.')
     if streams is None: return [],[],[]
     sources=[s for s in streams if s.get('codec_type')=='subtitle'];selected=[]
     if mode=='all': selected=[dict(source=i,include=True) for i in range(len(sources))]
     elif mode=='forced': selected=[dict(source=i,include=True,forced=True) for i,s in enumerate(sources) if s.get('disposition',{}).get('forced')]
+    elif mode=='englishForeign': selected,_=english_for_foreign(streams)
     elif mode=='custom': selected=plan
     maps=[];args=[];burn=[];out=0;default_used=False
     for rule in selected:

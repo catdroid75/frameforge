@@ -1,4 +1,4 @@
-# Deploy FrameForge 0.9.0-beta.8
+# Deploy FrameForge 0.9.0.10
 
 1. Extract this complete build on your Docker host. Keep your existing `data` folder and private `.env`.
 2. Copy `.env.example` to `.env` only for a new installation. In an existing `.env`, add a random `FRAMEFORGE_AUTH_TOKEN` of at least 12 characters, and `FRAMEFORGE_COOKIE_SECURE=false` for local HTTP. Retain all `FRAMEFORGE_SMTP_*` values. Remove the old `FRAMEFORGE_AUTH_USERNAME` and `FRAMEFORGE_AUTH_PASSWORD` variables. Keep the login token separate from your email app password.
@@ -10,10 +10,10 @@
 Build on the Docker endpoint host first:
 
 ```sh
-docker build -t frameforge:0.9.0-beta.8 .
+docker build -t frameforge:0.9.0.10 .
 ```
 
-Create/update a Portainer Stack using the supplied `compose.yaml`. When deploying through the web editor, remove `build: .` because the image is already built; retain `image: frameforge:0.9.0-beta.8`. Use absolute host paths for `INPUT_DIR`, `OUTPUT_DIR`, and `DATA_DIR`. Set the login and SMTP variables in the stack environment editor, never in a shared Compose file. Include the NVIDIA overlay's device reservation and environment fields for GPU mode. Portainer Stack environment values must be set explicitly; a `.env` on the endpoint host is not automatically imported by the web editor. Use a standalone Docker endpoint for this Compose workflow, not Docker Swarm.
+Create/update a Portainer Stack using the supplied `compose.yaml`. When deploying through the web editor, remove `build: .` because the image is already built; retain `image: frameforge:0.9.0.10`. Use absolute host paths for `INPUT_DIR`, `OUTPUT_DIR`, and `DATA_DIR`. Set the login and SMTP variables in the stack environment editor, never in a shared Compose file. Include the NVIDIA overlay's device reservation and environment fields for GPU mode. Portainer Stack environment values must be set explicitly; a `.env` on the endpoint host is not automatically imported by the web editor. Use a standalone Docker endpoint for this Compose workflow, not Docker Swarm.
 
 The default published port is bound to the endpoint's loopback address. Access it using an SSH tunnel (`ssh -L 8765:127.0.0.1:8765 user@docker-host`), or use an HTTPS reverse proxy with a deliberate private network connection to the container. For HTTPS, set `FRAMEFORGE_COOKIE_SECURE=true` and `FRAMEFORGE_ORIGINS=https://your-frameforge-host` and preserve the Host header. Change the network/port mapping only as required for that proxy. Redeploy the stack after changes.
 

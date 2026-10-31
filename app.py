@@ -265,7 +265,7 @@ def claim_job():
         active={key:sum(bool(j.get('_working')) and job_kind(j)==key for j in JOBS) for key in PERFORMANCE}
         for j in JOBS:
             if j['status']=='queued' and not j.get('_working') and active[job_kind(j)]<PERFORMANCE[job_kind(j)]:
-                j.update(status='running',_working=True)
+                j.update(status='running',_working=True,fps=None)
                 return j
     return None
 
@@ -286,7 +286,7 @@ def options(o, streams=None, crop=None, hdr_plan=None, burn_assets=None, scan_fi
     if not isinstance(o.get('ownFolder',False),bool): raise ValueError('Invalid movie folder setting')
     if not isinstance(o.get('cleanNames',False),bool): raise ValueError('Invalid filename cleanup setting')
     if not isinstance(autocrop,bool): raise ValueError('Invalid auto crop setting')
-    if tracks not in ('first','all') or channels not in ('original','2','6') or subtitles not in ('none','forced','all','custom'): raise ValueError('Invalid track setting')
+    if tracks not in ('first','all','selected') or channels not in ('original','2','6') or subtitles not in ('none','forced','all','custom','englishForeign'): raise ValueError('Invalid track setting')
     rates=('96','128','192','256','320','384','448','512','640','768','1024')
     if not 0<=q<=51 or preset not in ('ultrafast','fast','medium','slow') or scale not in ('original','2160','1080','720','480') or fps not in ('original','24','25','30','60') or rate not in rates: raise ValueError('Invalid encoding option')
     if v=='copy' and (scale!='original' or fps!='original' or autocrop): raise ValueError('Video stream copy requires original resolution, frame rate, and no cropping')
@@ -416,7 +416,7 @@ def queue_action(action,ident=None):
             for pending in JOBS:
                 if pending['status'] in ('queued','blocked'): ensure_job_space(pending)
             for j in JOBS:
-                if j['status']=='blocked': j.update(status='queued',progress=0,error='')
+                if j['status']=='blocked': j.update(status='queued',progress=0,fps=None,error='')
             CONTROL.update(paused=False,reason='',kind='')
         elif action=='pause': pause_queue('user','Queue paused by you. Active files will finish.')
         elif action=='retry':
@@ -424,7 +424,7 @@ def queue_action(action,ident=None):
                 if j['status']=='failed' and (ident is None or j['id']==ident):
                     if j.get('_working'): raise ValueError('Wait for failure cleanup to finish')
                     if not CONTROL['run']: CONTROL.update(run=uuid.uuid4().hex,counts={'done':0,'failed':0,'cancelled':0})
-                    j.update(status='queued',progress=0,error='');j.pop('_counted',None)
+                    j.update(status='queued',progress=0,fps=None,error='');j.pop('_counted',None)
         else: raise ValueError('Unknown queue action')
 
 def preparation_command(j,cmd,cwd):
@@ -460,6 +460,8 @@ def worker(shutdown=None):
                 with LOCK:j['scanReport']=scan_report
             video=next((s for s in info.get('streams',[]) if s.get('codec_type')=='video'),{})
             temporal=scan.filters(j['options'],scan_report,video)
+            if j['options'].get('subtitles')=='englishForeign':
+                with LOCK:j['subtitleRuleNote']=subtitle_tools.english_for_foreign(info.get('streams',[]))[1]
             export_specs,export_warning=subtitle_tools.export_plan(j['options'],info.get('streams',[]))
             with LOCK:j['subtitleWarning']=export_warning
             hdr_plan=None
@@ -492,6 +494,12 @@ def worker(shutdown=None):
                     if j['status']=='cancelled': continue
                     p=subprocess.Popen(cmd,stdout=subprocess.PIPE,stderr=log,text=True,cwd=work.name if work else None);j['_process']=p
                 for line in p.stdout:
+                    if line.startswith('fps='):
+                        try:
+                            fps=float(line.partition('=')[2])
+                            if 0<=fps<float('inf'):
+                                with LOCK:j['fps']=fps
+                        except ValueError:pass
                     if line.startswith('out_time_us=') and duration:
                         try:
                             with LOCK: j['progress']=min(99,float(line.split('=')[1])/1e6/duration*100)

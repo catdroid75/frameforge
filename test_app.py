@@ -68,6 +68,9 @@ class Integration(unittest.TestCase):
         for params in ({},{'video':'libx265'},{'format':'webm','video':'libvpx-vp9','audio':'libopus'},{'format':'mov','video':'prores_ks','audio':'pcm_s16le'},{'format':'avi','video':'mpeg4','audio':'libmp3lame'},{'format':'mkv','video':'copy','audio':'copy'},{'scale':'480','fps':'30','audio':'none'}):
             j=self.wait(self.add(**params));self.assertEqual(j['status'],'done',j['error']);self.assertEqual(j['progress'],100)
             p=Path(j['output']);self.assertTrue(p.is_file());self.assertGreater(app.probe(p),0)
+            if params.get('video')!='copy':
+                self.assertIsInstance(j['fps'],(int,float));self.assertGreaterEqual(j['fps'],0)
+            else:self.assertIsNone(j['fps'])
     def test_03_collisions_preserve_existing(self):
         j=self.wait(self.add());p=Path(j['output']);original=p.read_bytes()
         k=self.wait(self.add());self.assertNotEqual(k['output'],j['output']);self.assertEqual(p.read_bytes(),original);self.assertTrue(self.video.exists())
@@ -728,5 +731,48 @@ class Integration(unittest.TestCase):
             self.assertFalse(list(folder.glob('*.srt')));self.assertFalse(list(folder.glob('*.mkv')))
             self.assertTrue(self.call('/api/state')['queue']['paused'])
         finally:self.resume()
+
+    def test_48_shared_audio_codecs_all_and_selected(self):
+        source=self.rich_source()
+        for codec in ('copy','aac','ac3','eac3'):
+            for mode,positions in [('all',[]),('selected',[1])]:
+                j=self.wait(self.add_source(source,video='copy',audioMode='global',audio=codec,audioTracks=mode,audioSelected=positions,channels='original',bitrate='448' if codec in ('ac3','eac3') else '192'))
+                self.assertEqual(j['status'],'done',j['error'])
+                tracks=[s for s in app.media_info(j['output'])['streams'] if s['codec_type']=='audio']
+                self.assertEqual(len(tracks),2 if mode=='all' else 1)
+                self.assertEqual(tracks[0]['codec_name'],'aac' if codec=='copy' else codec)
+                if mode=='selected':self.assertEqual(tracks[0].get('tags',{}).get('language'),'spa')
+                if codec=='copy':self.assertNotIn('-b:a:',j['command'])
+        for selected in ([],[1,1],[-1],[True],['1']):
+            with self.assertRaises(ValueError):app.options(dict(audioTracks='selected',audioSelected=selected))
+        self.call('/api/presets',dict(action='save',name='Shared AAC selection',settings={'options':dict(audioMode='global',audio='aac',audioTracks='selected',audioSelected=[1])}))
+        saved=next(p for p in self.call('/api/presets')['presets'] if p['name']=='Shared AAC selection')
+        self.assertEqual(saved['settings']['options']['audioSelected'],[1])
+
+    def test_49_conditional_english_subtitles(self):
+        source=self.input/'foreign-with-english.mkv'
+        subprocess.run(['ffmpeg','-v','error','-i',str(self.rich_source()),'-map','0','-c','copy','-metadata:s:a:0','language=jpn','-metadata:s:a:1','language=eng','-metadata:s:s:0','language=eng','-metadata:s:s:1','language=eng',str(source)],check=True)
+        # First English subtitle is forced-only; prefer the second/full one.
+        j=self.wait(self.add_source(source,format='mp4',video='copy',audio='aac',audioTracks='selected',audioSelected=[1],subtitles='englishForeign'))
+        self.assertEqual(j['status'],'done',j['error'])
+        streams=app.media_info(j['output'])['streams'];subs=[s for s in streams if s['codec_type']=='subtitle']
+        self.assertEqual(len(subs),1);self.assertEqual(subs[0]['codec_name'],'mov_text');self.assertEqual(subs[0]['tags']['language'],'eng');self.assertTrue(subs[0]['disposition']['default']);self.assertFalse(subs[0]['disposition']['forced'])
+        self.assertIn('track 2',j['subtitleRuleNote'])
+        self.assertEqual(next(s for s in streams if s['codec_type']=='audio')['tags']['language'],'eng')
+        # First source audio is English: do not add a subtitle.
+        english=self.input/'english-with-english.mkv'
+        subprocess.run(['ffmpeg','-v','error','-i',str(source),'-map','0','-c','copy','-metadata:s:a:0','language=eng',str(english)],check=True)
+        j=self.wait(self.add_source(english,video='copy',subtitles='englishForeign'))
+        self.assertEqual(j['status'],'done',j['error']);self.assertFalse(any(s['codec_type']=='subtitle' for s in app.media_info(j['output'])['streams']))
+
+    def test_50_english_rule_unknown_missing_and_language_tags(self):
+        import subtitles
+        sub={'codec_type':'subtitle','codec_name':'subrip','tags':{'language':'en-US'}}
+        for language in ('und','zxx','mul','','xxx'):
+            plan,note=subtitles.english_for_foreign([{'codec_type':'audio','tags':{'language':language}},sub]);self.assertFalse(plan);self.assertIn('unknown',note)
+        plan,note=subtitles.english_for_foreign([{'codec_type':'audio','tags':{'language':'es'}}]);self.assertFalse(plan);self.assertIn('no tagged English',note)
+        plan,_=subtitles.english_for_foreign([{'codec_type':'audio','tags':{'language':'fra'}},sub]);self.assertEqual(plan[0]['source'],0);self.assertTrue(plan[0]['default'])
+        plan,_=subtitles.english_for_foreign([{'codec_type':'audio','tags':{'language':'en-GB'}},sub]);self.assertFalse(plan)
+        with self.assertRaises(ValueError):app.options(dict(format='avi',video='copy',subtitles='englishForeign'))
 
 if __name__=='__main__': unittest.main(verbosity=2)

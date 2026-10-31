@@ -1,6 +1,6 @@
 # FrameForge
 
-Current release: **0.9.0-beta.8**. See [CHANGELOG.md](CHANGELOG.md).
+Current release: **0.9.0.10**. See [CHANGELOG.md](CHANGELOG.md).
 
 A local batch video converter with a browser interface. **No pip packages, npm packages, build tools, CDN scripts, external accounts, or uploads.** Runtime dependencies: Python 3.10+ and FFmpeg with ffprobe on PATH. Conversion works offline. Optional email notifications use your configured SMTP server. Named presets and mail configuration use SQLite, included with Python.
 
@@ -262,7 +262,7 @@ References: [FFmpeg thread and filter controls](https://ffmpeg.org/ffmpeg-all.ht
 
 The interface uses the logo's orange/amber and charcoal palette. Choose **Appearance → Light, Dark, or System** in the header. System follows your operating system, including changes while the app is open. Your appearance choice is saved in this browser; the matching light/dark logo switches automatically. Appearance is separate from conversion presets.
 
-Use **Sources & destination** for sources, destination, container format and filename cleanup; **Video** for encoding, CPU/GPU job limits, HDR, cropping and subtitles; and **Audio** for shared or per-track audio outputs. Quick presets remain above the tabs because they can affect both video and audio. Settings stay in place when switching tabs. Left/Right arrow keys, Home and End navigate the tabs with a keyboard. The last tab is remembered for the browser session. Queue, Start and saved presets are accessible outside the tabs. Use the **Admin** tab for email settings, notification toggles, test email and delivery history.
+Use **Sources & destination** for sources, destination, container format and filename cleanup; **Video** for encoding, CPU/GPU job limits, HDR and cropping; and **Audio & subtitles** for shared/per-track audio, subtitle mapping, burn-in and export. Quick presets remain above the tabs because they can affect both video and audio. Settings stay in place when switching tabs. Left/Right arrow keys, Home and End navigate the tabs with a keyboard. The last tab is remembered for the browser session. Queue, Start and saved presets are accessible outside the tabs. Use the **Admin** tab for email settings, notification toggles, test email and delivery history.
 
 ### Output title metadata
 
@@ -329,7 +329,7 @@ Compose uses the versioned `frameforge:0.9.0-beta.8` tag. In Portainer you can u
 
 ## Desktop workspace and output layout
 
-FrameForge now uses a wide desktop layout (1280px or wider recommended), with batch presets and settings in the main editor and a persistent queue on the right. The queue action bar remains available while scrolling long settings. Sources & destination, Video & subtitles, Audio tracks and Admin remain keyboard-accessible tabs.
+FrameForge now uses a wide desktop layout (1280px or wider recommended), with batch presets and settings in the main editor and a persistent queue on the right. The queue action bar remains available while scrolling long settings. Sources & destination, Video, Audio & subtitles and Admin remain keyboard-accessible tabs.
 
 Encoded media is always written to a unique hidden `.frameforge-<job-id>.<format>` temp file in **`<selected destination>/_FFtmp/`**. Subtitle preparation uses a unique `.frameforge-subs-*` folder inside that same `_FFtmp/` directory. The directory is created automatically and reused; it remains in place when empty. Folder scans exclude this staging directory. After encoding and verification, the completed file is published into its final directory and the staging file is removed. Movie folders are created at publication, rather than before encoding. Cancellation and failure remove staging files; an abrupt process kill may leave them for manual cleanup. Existing final files are never overwritten. Root and final paths must be on a filesystem that supports the app's atomic hard-link publication; moving into a different mounted filesystem is not supported by this publication method.
 
@@ -357,7 +357,7 @@ TV output folders can be None, Series, or Series / Season 01; daily episodes use
 
 ## Export SRT subtitles
 
-Under Video & subtitles, choose **SRT sidecar export**: None, All text tracks, Forced text tracks, or Choose tracks below. Custom enables an independent **Export SRT** checkbox beside Keep and Burn in the subtitle editor. A track can be exported without being embedded or burned. Custom selection requires custom subtitle mode.
+Under Audio & subtitles, choose **SRT sidecar export**: None, All text tracks, Forced text tracks, or Choose tracks below. Custom enables an independent **Export SRT** checkbox beside Keep and Burn in the subtitle editor. A track can be exported without being embedded or burned. Custom selection requires custom subtitle mode.
 
 Files are named from the final video basename, language and original subtitle ordinal: `Movie Title (2020).eng.s1.forced.srt`. Track ordinals avoid duplicate-language collisions. All/Forced exports skip bitmap/unknown non-text tracks and show a queue notice; an explicitly selected bitmap export fails because OCR is not included. Forced mode uses stream flags, not individual forced events inside a mixed track. SRT keeps text/timestamps but may lose ASS styling, positioning or other source features.
 
@@ -374,3 +374,17 @@ Manual options include BWDIF or YADIF at one output frame per input frame, or bo
 The pipeline is **scan correction → HDR conversion → crop → resize → subtitle burn → encoding**. Crop detection sees the same scan/HDR preprocessing. These corrections require video re-encoding; stream copy may still be used with detection/reporting alone. SRT timestamps remain on the original timeline because these filters change frame representation/cadence rather than playback speed. Explicit frame-rate conversions outside these correction modes may drop/duplicate frames.
 
 The Docker image includes FFmpeg and its supporting filter libraries. A custom host FFmpeg build must provide the selected filters; unavailable features stop the queue with an FFmpeg error. See [FFmpeg filter documentation](https://ffmpeg.org/ffmpeg-filters.html) for idet, bwdif, yadif, fieldmatch and decimate.
+
+## Shared audio and conditional English subtitles
+
+In **Audio & subtitles**, choose **Shared settings · all or selected tracks** to apply one output codec to every included audio stream. Passthrough preserves the original compressed audio; AAC, Dolby Digital (AC-3), and Dolby Digital Plus (E-AC-3) encode it. Available codecs still depend on the container: MP4/MKV/MOV offer these shared choices, whereas WebM requires its supported codecs. Passthrough does not change channels or bitrate and must be compatible with the destination container. For multiple outputs from the same source, use advanced per-track mode instead.
+
+Use All tracks, First track, or **Choose specific tracks**. Inspect a sample to view language, codec and channel metadata, then check the required positions. Selected positions are reused for every file of the batch; missing required positions stop the queue. Unchecked tracks are omitted. All audio settings and selected positions save with presets.
+
+The subtitle option **Add English subtitles if first audio is foreign** checks the language metadata of the first source audio stream, regardless of which audio tracks you output. A recognized non-English tag includes one existing tagged English subtitle stream as the default: full subtitles are preferred over forced-only tracks, then the source default, then the first English track. Language variants such as en-US/eng and common two-/three-letter language tags are recognized. This is metadata detection, not speech recognition. Unknown/untagged/multiple-language tags, no audio, or no English subtitle produce a queue notice instead of guessing. Nothing is translated, generated or downloaded by this rule.
+
+The selected English subtitle uses the normal container-compatible soft-subtitle path (text conversion for MP4/MOV/WebM, text or bitmap copy for MKV). Unsupported bitmap/container combinations fail clearly rather than dropping the requested track. AVI cannot use this soft-subtitle rule. Players can override default-subtitle flags according to their own preferences. Explicit subtitle selection and SRT exports remain available separately.
+
+Validation update: the user confirmed Dolby Vision profile 7 → HDR conversion working on their files. This validates the supported path used by that installation; it does not certify every profile-7 variant or full enhancement-layer/FEL reconstruction. NVENC encoding is also user-confirmed.
+
+During encoding, each running file shows its percentage and FFmpeg-reported FPS (for example, `Converting 42% · 78.6 fps`). FPS is per job, not the total across the queue. Before the first speed report it displays FPS pending; preparation, detection and export phases show their phase names instead. Short jobs may report zero FPS; stream-copy operations show FPS n/a because no frames are encoded.

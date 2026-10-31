@@ -38,3 +38,5 @@ body:has(.app-main){min-width:1180px}body:has(.app-main)>header{height:88px;padd
 
 /* Give the orange/charcoal identity a distinct, high-contrast header. */
 :root{--header-bg:#ffffff;--header-line:#d5c4b4}:root[data-theme="dark"]{--header-bg:#080a0d;--header-line:#494039}body:has(.app-main)>header{background:var(--header-bg);border-bottom:1px solid var(--header-line);box-shadow:0 3px 18px #0000000d}header .brand{background:#fff8ef;border:1px solid #ead9c6;border-radius:9px;padding:3px 10px}header .brand-logo{max-height:70px}header .app-version{color:var(--accent);background:var(--accent-soft);border:1px solid var(--line)}
+
+.app-main .audio-source-tools{padding:16px 20px;margin-bottom:22px;border:1px solid var(--line);border-radius:9px;background:var(--surface)}.app-main .audio-source-tools h3{margin:0;font-size:14px}.app-main .audio-source-tools .button-row{justify-content:flex-start;margin-top:12px}.app-main #sharedTrackSelection{margin:18px 0;padding:16px;border:1px solid var(--line);border-radius:9px}.app-main #sharedAudioTracks{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px 20px}.app-main #sharedAudioTracks .check{margin:6px 0}

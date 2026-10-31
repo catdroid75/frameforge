@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.9.0.10 — 2026-10-31
+
+- Restore the shared audio codec selector after leaving advanced per-track mode; label Passthrough clearly alongside AAC, Dolby Digital and Dolby Digital Plus.
+- Add explicit audio track selection for shared settings and save those positions with presets.
+- Add conditional English subtitles when the first source audio track has a recognized non-English language tag, with default/full-track preference and clear notices for unknown/missing language metadata.
+- Move subtitles into the Audio & subtitles tab so the audio-language policy and subtitle controls share one workspace.
+- Show FFmpeg-reported FPS alongside each running file’s percentage, resetting it on retry/restart.
+- Carry forward beta.9 FFmpeg filter-detection compatibility fixes.
+- Record user confirmation that Dolby Vision profile 7 to HDR conversion works on their files; no claim of full enhancement-layer/FEL reconstruction.
+
+
+## 0.9.0-beta.9 — 2026-10-31
+
+- Fix HDR and subtitle filter detection for FFmpeg builds with two status columns as well as three.
+- Read filter listings from stdout or stderr, surface failed FFmpeg queries, and identify the exact missing HDR filters.
+- Add regression coverage for both listing formats and missing/failed filter queries.
+
 ## 0.9.0-beta.8 — 2026-10-31
 
 - Use the logo glyph as a multi-resolution favicon on the workspace and token login page.

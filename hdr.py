@@ -6,7 +6,9 @@ from functools import lru_cache
 @lru_cache(maxsize=1)
 def capabilities():
     p=subprocess.run(['ffmpeg','-hide_banner','-filters'],capture_output=True,text=True,timeout=10)
-    filters=set(re.findall(r'^\s*[TSC\.\|]{3}\s+(\w+)\s',p.stdout,re.M))
+    output=p.stdout+'\n'+p.stderr
+    if p.returncode: raise ValueError('Could not query FFmpeg filters: '+p.stderr[-1000:])
+    filters=set(re.findall(r'^\s*[TSC\.\|]{2,3}\s+(\w+)\s',output,re.M))
     helptext={}
     for name in ('sidedata','libplacebo'):
         if name in filters:
@@ -43,7 +45,9 @@ def validate(o):
     if o.get('video','libx264')=='copy': raise ValueError('HDR conversion requires video re-encoding')
     if target=='hdr10' and (o.get('video') not in ('libx265','hevc_nvenc') or o.get('format','mp4') not in ('mp4','mkv','mov')): raise ValueError('HDR10 output requires HEVC (software x265 or HEVC NVENC) in MP4, MKV, or MOV')
     cap=capabilities()
-    if not cap['cpu']: raise ValueError('HDR conversion requires FFmpeg with zscale, tonemap, sidedata, format and setparams filters')
+    if not cap['cpu']:
+        missing=sorted({'zscale','tonemap','sidedata','format','setparams'}-set(cap['filters']))
+        raise ValueError('HDR conversion unavailable. Missing FFmpeg filters: '+', '.join(missing)+'. Check the FFmpeg build used by this process, then restart FrameForge.')
     if engine=='libplacebo' and not cap['libplacebo']: raise ValueError('This FFmpeg does not include libplacebo; use CPU for compatible HDR10/PQ sources')
 
 def effective_options(o):

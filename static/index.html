@@ -5,7 +5,9 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <script>(()=>{let t='system';try{t=localStorage.getItem('frameforge-theme')||'system'}catch{}if(!['system','light','dark'].includes(t))t='system';document.documentElement.dataset.theme=t==='system'?(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'):t;document.documentElement.dataset.themePreference=t})();</script><title>FrameForge · Video converter</title>
 <link rel="stylesheet" href="/style.css">
-<link rel="icon" href="/favicon.ico?v=0.9.0-beta.8" sizes="any"><link rel="icon" type="image/png" sizes="256x256" href="/favicon.png?v=0.9.0-beta.8"></head>
+<link rel="icon" href="/favicon.ico?v=0.9.0-beta.8" sizes="any">
+<link rel="icon" type="image/png" sizes="256x256" href="/favicon.png?v=0.9.0-beta.8">
+</head>
 <body>
 <header><a class="brand" href="/" aria-label="FrameForge home"><img class="brand-logo logo-light" src="/logo.png" alt="FrameForge"><img class="brand-logo logo-dark" src="/logo-dark.png" alt="FrameForge"></a><div class="header-actions">
 <span id="appVersion" class="app-version" aria-label="Application version"></span>
@@ -50,7 +52,7 @@
 <p>Quick presets set only their core fields. Review HDR, subtitle and per-track settings separately, then save your complete configuration above.</p>
 <p><a href="https://docs.nvidia.com/video-technologies/video-codec-sdk/13.1/ffmpeg-with-nvidia-gpu/" target="_blank" rel="noopener noreferrer">NVIDIA encoding guidance</a> · <a href="https://ffmpeg.org/ffmpeg-codecs.html" target="_blank" rel="noopener noreferrer">FFmpeg codec documentation</a></p></details></section><div class="panel workspace" id="settingsWorkspace">
 <div class="settings-tabs" role="tablist" aria-label="Conversion settings">
-<button id="tab-io" type="button" role="tab" aria-selected="true" aria-controls="panel-io" tabindex="0"><span class="tab-number">01</span> Sources &amp; destination</button><button id="tab-video" type="button" role="tab" aria-selected="false" aria-controls="panel-video" tabindex="-1"><span class="tab-number">02</span> Video &amp; subtitles</button><button id="tab-audio" type="button" role="tab" aria-selected="false" aria-controls="panel-audio" tabindex="-1"><span class="tab-number">03</span> Audio tracks</button>
+<button id="tab-io" type="button" role="tab" aria-selected="true" aria-controls="panel-io" tabindex="0"><span class="tab-number">01</span> Sources &amp; destination</button><button id="tab-video" type="button" role="tab" aria-selected="false" aria-controls="panel-video" tabindex="-1"><span class="tab-number">02</span> Video</button><button id="tab-audio" type="button" role="tab" aria-selected="false" aria-controls="panel-audio" tabindex="-1"><span class="tab-number">03</span> Audio &amp; subtitles</button>
 <button id="tab-admin" type="button" role="tab" aria-selected="false" aria-controls="panel-admin" tabindex="-1"><span class="tab-number">04</span> Admin</button>
 </div>
 <section class="tab-panel sources" id="panel-io" role="tabpanel" aria-labelledby="tab-io" tabindex="0"><div class="source-column">
@@ -269,27 +271,17 @@
 <label class="check"><input id="dvBaseLayer" type="checkbox"> Use HDR10-compatible Dolby Vision base layer only (discard RPU/EL/FEL)</label><label class="check"><input id="hdrDefaultMaster" type="checkbox"> Allow BT.2020/D65 mastering defaults if missing (software x265 only)</label><button id="inspectHDR">Inspect selected source</button><button id="browseHDRSample">Browse sample video</button><p id="hdrSourceInfo" class="hint">Select a file or browse a sample under the track editors to inspect its HDR metadata.</p>
 <p id="hdrSupport" class="hint">HDR10 output requires 10-bit HEVC; SDR uses BT.709. Dolby Vision profile 5 requires decoded RPU metadata, libplacebo and Vulkan. Profile 7 / enhancement-layer sources require explicit compatible base-layer-only selection; full FEL reconstruction is not supported. SDR/unknown input is not relabeled as HDR.</p>
 </fieldset>
-<fieldset class="subtitle-settings">
-<legend>Subtitles</legend>
-<label>Subtitle streams<select id="subtitles"><option value="none">Do not include</option>
-<option value="forced">Include forced streams only</option>
-<option value="all">Include all subtitle streams</option>
-<option value="custom">Choose tracks / burn subtitles</option></select></label><label>SRT sidecar export<select id="exportSrt"><option value="none">No SRT export</option>
-<option value="all">Export all text subtitle tracks</option>
-<option value="forced">Export forced text tracks</option>
-<option value="custom">Choose tracks below</option></select></label><section id="subtitleEditor" hidden><h3>Subtitle tracks</h3>
-<div class="button-row">
-<button id="inspectSubtitles">Inspect first selected file</button><button id="browseSubtitleSample">Browse sample video</button>
-</div>
-<p id="subtitleSample" class="hint"></p>
-<div id="subtitleRules"></div>
-<p class="hint">Keep adds a selectable soft subtitle stream. Burn renders the track into the video; both can be selected together, and multiple tracks can be burned. Burn-in runs after HDR conversion, crop and resize. Bitmap subtitles default to fitting inside the cropped frame; original-coordinate placement is also available. Rules use subtitle track positions throughout the batch; a missing track stops the queue. Bitmap soft subtitles require MKV. Burned subtitles cannot be turned off during playback.</p></section><p class="hint">Keeps the first video track. Forced-only mode uses the source forced flags. Choose all streams or custom track selection for other subtitles. MKV preserves text and bitmap soft subtitles; MP4 / MOV / WebM need compatible text subtitles. Burned tracks become part of the video.</p>
-<p class="hint">SRT files are saved beside the completed video using its final basename, language and source track number. Bitmap tracks need OCR; automatic export skips them with a notice. SRT preserves text and timing, but may lose source styling.</p>
-</fieldset></section><section id="panel-audio" role="tabpanel" aria-labelledby="tab-audio" class="tab-panel" tabindex="0" hidden=""><div class="section-title"><h2>Audio settings</h2></div>
+</section><section id="panel-audio" role="tabpanel" aria-labelledby="tab-audio" class="tab-panel" tabindex="0" hidden=""><div class="section-title"><h2>Audio &amp; subtitles</h2></div>
 <p class="tab-description">Preserve the original, build a compatible mix, or give every track its own outputs.</p>
-<label>Audio configuration<select id="audioMode"><option value="global">Same settings for selected tracks</option>
-<option value="perTrack">Different settings / multiple outputs per track</option></select></label><div class="grid">
-<label>Audio codec<select id="audio"></select></label><label>Audio bitrate<select id="bitrate"><option>96</option>
+<section class="audio-source-tools"><h3>Source audio tracks</h3>
+<p class="hint">Inspect a representative file to identify languages and track positions. Shared output settings apply once to each included track; use the advanced per-track mode to create multiple outputs from one source.</p>
+<div class="button-row">
+<button id="inspectSelected">Inspect first selected file</button><button id="browseAudioSample">Browse sample video</button>
+</div>
+<p id="audioSample" class="hint"></p>
+</section><label>Audio configuration<select id="audioMode"><option value="global">Shared settings · all or selected tracks</option>
+<option value="perTrack">Advanced · per-track settings / multiple outputs</option></select></label><div class="grid">
+<label>Shared audio output<select id="audio"></select></label><label>Audio bitrate<select id="bitrate"><option>96</option>
 <option>128</option>
 <option selected>192</option>
 <option>256</option>
@@ -300,20 +292,37 @@
 <option>640</option>
 <option>768</option>
 <option>1024</option></select><small>kbps</small></label><label>Audio tracks<select id="audioTracks"><option value="all">All audio tracks</option>
-<option value="first">First audio track</option></select></label><label>Audio channels<select id="channels"><option value="original">Preserve source channels</option>
+<option value="first">First audio track</option>
+<option value="selected">Choose specific tracks</option></select></label><label>Audio channels<select id="channels"><option value="original">Preserve source channels</option>
 <option value="2">Downmix to stereo</option>
 <option value="6">Convert to 5.1 (6 channels)</option></select></label>
 </div>
 <p class="hint">Audio settings apply to every selected audio track. AC-3 / E-AC-3 support up to 5.1 here. “Convert to 5.1” does not create real surround from stereo.</p>
-<section id="audioEditor" hidden><h3>Per-track audio outputs</h3>
+<section id="sharedTrackSelection" hidden><h3>Tracks to include</h3>
+<div id="sharedAudioTracks"></div>
+<p class="hint">Track positions apply across the batch. A required position missing from a file stops the queue; use separate batches for different layouts. Unchecked tracks are omitted in shared mode.</p></section><section id="audioEditor" hidden><h3>Per-track audio outputs</h3>
 <p class="hint">Inspect a sample file to identify its audio tracks. Rules use audio track positions (track 1, track 2, …) in every file of the batch. Use separate batches for files with different layouts. A required track missing from a file stops the queue.</p>
-<div class="button-row">
-<button id="inspectSelected">Inspect first selected file</button><button id="browseAudioSample">Browse sample video</button>
-</div>
-<p id="audioSample" class="hint"></p>
 <div id="audioRules"></div>
 <button id="addAudioRule">＋ Add track rule</button><label>Tracks without a rule<select id="audioFallback"><option value="copy">Keep original (stream copy)</option>
-<option value="drop">Do not include</option></select></label><p class="hint">Each output can copy the original or encode independently. Add an AAC output beside an original copy, for example. Removing every output from a rule drops that source track. Output settings apply only to that output; copy requires original channels.</p></section></section>
+<option value="drop">Do not include</option></select></label><p class="hint">Each output can copy the original or encode independently. Add an AAC output beside an original copy, for example. Removing every output from a rule drops that source track. Output settings apply only to that output; copy requires original channels.</p></section><fieldset class="subtitle-settings">
+<legend>Subtitles</legend>
+<label>Subtitle streams<select id="subtitles"><option value="none">Do not include</option>
+<option value="forced">Include forced streams only</option>
+<option value="all">Include all subtitle streams</option>
+<option value="custom">Choose tracks / burn subtitles</option>
+<option value="englishForeign">Add English subtitles if first audio is foreign</option></select></label><p class="hint">Conditional English: checks the first source audio track, regardless of output audio selection. A recognized non-English language tag includes one existing tagged English subtitle track as default, preferring full subtitles over forced-only tracks. Unknown language or no English subtitles produces a queue notice. No speech detection, translation or downloads.</p>
+<label>SRT sidecar export<select id="exportSrt"><option value="none">No SRT export</option>
+<option value="all">Export all text subtitle tracks</option>
+<option value="forced">Export forced text tracks</option>
+<option value="custom">Choose tracks below</option></select></label><section id="subtitleEditor" hidden><h3>Subtitle tracks</h3>
+<div class="button-row">
+<button id="inspectSubtitles">Inspect first selected file</button><button id="browseSubtitleSample">Browse sample video</button>
+</div>
+<p id="subtitleSample" class="hint"></p>
+<div id="subtitleRules"></div>
+<p class="hint">Keep adds a selectable soft subtitle stream. Burn renders the track into the video; both can be selected together, and multiple tracks can be burned. Burn-in runs after HDR conversion, crop and resize. Bitmap subtitles default to fitting inside the cropped frame; original-coordinate placement is also available. Rules use subtitle track positions throughout the batch; a missing track stops the queue. Bitmap soft subtitles require MKV. Burned subtitles cannot be turned off during playback.</p></section><p class="hint">Keeps the first video track. Forced-only mode uses the source forced flags. Choose all streams or custom track selection for other subtitles. MKV preserves text and bitmap soft subtitles; MP4 / MOV / WebM need compatible text subtitles. Burned tracks become part of the video.</p>
+<p class="hint">SRT files are saved beside the completed video using its final basename, language and source track number. Bitmap tracks need OCR; automatic export skips them with a notice. SRT preserves text and timing, but may lose source styling.</p>
+</fieldset></section>
 <section id="panel-admin" role="tabpanel" aria-labelledby="tab-admin" class="tab-panel" tabindex="0" hidden><div class="section-title"><h2>Admin</h2></div>
 <p class="tab-description">Configure email notifications for conversion failures and completed queues.</p>
 <section class="notifications"><div class="section-title"><h3>Email notifications</h3></div>
