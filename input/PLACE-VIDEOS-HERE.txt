@@ -1,0 +1,1 @@
+Place source videos here, or set INPUT_DIR in .env to an existing folder.

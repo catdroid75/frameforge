@@ -1,0 +1,374 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<script>(()=>{let t='system';try{t=localStorage.getItem('frameforge-theme')||'system'}catch{}if(!['system','light','dark'].includes(t))t='system';document.documentElement.dataset.theme=t==='system'?(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'):t;document.documentElement.dataset.themePreference=t})();</script><title>FrameForge · Video converter</title>
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<header><a class="brand" href="/" aria-label="FrameForge home"><img class="brand-logo logo-light" src="/logo.png" alt="FrameForge"><img class="brand-logo logo-dark" src="/logo-dark.png" alt="FrameForge"></a><div class="header-actions">
+<span id="appVersion" class="app-version" aria-label="Application version"></span>
+<button id="logout" type="button">Sign out</button><span class="online"><i></i> On your computer</span><label class="theme-control">Appearance<select id="themeMode" aria-label="Color theme"><option value="system">System</option>
+<option value="light">Light</option>
+<option value="dark">Dark</option></select></label>
+</div></header>
+<main class="app-main"><div class="intro desktop-intro">
+<div>
+<div class="eyebrow">YOUR LOCAL ENCODING WORKSPACE</div>
+<h1>Build a better batch.</h1>
+<p>Choose your files, configure the streams, and follow every encode.</p>
+</div>
+<div class="workspace-note">LOCAL FILES · NO UPLOADS<br><span>Destination/_FFtmp → final folders</span>
+</div>
+</div>
+<div class="desktop-dashboard">
+<div class="editor-column">
+<section class="panel saved"><div class="section-title"><h2>Batch configuration</h2></div>
+<div class="preset-bar">
+<label>Quick preset<select id="quick"><option value="balanced" selected>Everyday MP4 · H.264</option>
+<option value="small">Smaller MP4 · HEVC</option>
+<option value="web">Web video · WebM</option>
+<option value="edit">Editing · ProRes MOV</option>
+<option value="copy">Remux · copy streams</option>
+<option value="custom">Custom settings</option></select></label><label>Saved preset<select id="savedPreset"><option value="">Choose a saved preset</option></select></label><button id="loadPreset">Load</button><label>Preset name<input id="presetName" placeholder="e.g. Movies · HEVC + AAC"></label><button id="savePreset" class="primary">Save settings</button><button id="deletePreset">Delete</button>
+</div>
+<p class="hint">Saves conversion settings, per-track audio rules, filename cleanup, output folder and subfolder choice. The last saved preset is restored when the app opens. Source selections and SMTP passwords are not included.</p>
+<details class="recommendations"><summary>Recommended starting points</summary><p>Start with a short sample before processing a large batch. These are starting points, not guarantees of size or quality.</p>
+<ul>
+<li>
+<b>Everyday playback:</b> MP4, H.264 CRF 23, Medium, original resolution/frame rate, AAC stereo 192 kbps.</li>
+<li>
+<b>Smaller files:</b> HEVC CRF 28; lower the number if you see artifacts. Confirm HEVC support on your player.</li>
+<li>
+<b>NVIDIA offline encoding:</b> try HEVC NVENC, CQ 23, P6, HQ, spatial AQ strength 8 and lookahead 16 where supported. Use P4 or Auto options for a simpler starting point. GPU and driver limits still apply.</li>
+<li>
+<b>Audio preservation:</b> MKV with original audio copy; add AAC stereo 192 kbps as a second output for portable playback. For Dolby Digital 5.1, try AC-3 448–640 kbps.</li>
+<li>
+<b>HDR and subtitles:</b> inspect a source first. Choose HDR10 for a compatible HDR display, SDR for an SDR display, and Auto processing. Keep subtitles soft when possible; burning is permanent and follows crop/resize.</li>
+</ul>
+<p>Quick presets set only their core fields. Review HDR, subtitle and per-track settings separately, then save your complete configuration above.</p>
+<p><a href="https://docs.nvidia.com/video-technologies/video-codec-sdk/13.1/ffmpeg-with-nvidia-gpu/" target="_blank" rel="noopener noreferrer">NVIDIA encoding guidance</a> · <a href="https://ffmpeg.org/ffmpeg-codecs.html" target="_blank" rel="noopener noreferrer">FFmpeg codec documentation</a></p></details></section><div class="panel workspace" id="settingsWorkspace">
+<div class="settings-tabs" role="tablist" aria-label="Conversion settings">
+<button id="tab-io" type="button" role="tab" aria-selected="true" aria-controls="panel-io" tabindex="0"><span class="tab-number">01</span> Sources &amp; destination</button><button id="tab-video" type="button" role="tab" aria-selected="false" aria-controls="panel-video" tabindex="-1"><span class="tab-number">02</span> Video &amp; subtitles</button><button id="tab-audio" type="button" role="tab" aria-selected="false" aria-controls="panel-audio" tabindex="-1"><span class="tab-number">03</span> Audio tracks</button>
+<button id="tab-admin" type="button" role="tab" aria-selected="false" aria-controls="panel-admin" tabindex="-1"><span class="tab-number">04</span> Admin</button>
+</div>
+<section class="tab-panel sources" id="panel-io" role="tabpanel" aria-labelledby="tab-io" tabindex="0"><div class="source-column">
+<div class="section-title">
+<span class="step">01</span><h2>Source videos</h2>
+<span class="muted" id="sourceCount">No sources selected</span>
+</div>
+<div class="drop">
+<div class="file-icon">▤</div>
+<h3>Bring your videos together</h3>
+<p>Select individual files or an entire folder.</p>
+<div class="source-inputs">
+<label for="fileInput">Input video file</label><div class="path-row">
+<input id="fileInput" placeholder="Full path to a video file"><button id="browseFiles">Browse files</button><button id="addFiles">Add</button>
+</div>
+<label for="folderInput">Input folder</label><div class="path-row">
+<input id="folderInput" placeholder="Full path to an input folder"><button id="browseFolder">Browse folder</button><button id="addFolder">Add</button>
+</div>
+</div>
+</div>
+<div id="sources" class="source-list"></div>
+<label class="check"><input id="recursive" type="checkbox"> Include subdirectories</label><label class="check"><input id="mirrorDirs" type="checkbox" disabled> Mirror source subdirectories in destination</label><p class="hint">Relative to each selected source folder. Example: Source/Drama/Movie.mkv → Destination/Drama/Movie.mkv. Files selected individually go in the destination root. Movie folders, when enabled, go inside the mirrored path.</p>
+</div>
+<div class="output">
+<div class="section-title">
+<span class="step">02</span><h2>Save destination</h2>
+</div>
+<label>Output format<select id="format"><option>mp4</option>
+<option>mkv</option>
+<option>mov</option>
+<option>webm</option>
+<option>avi</option></select></label><div class="path-row">
+<input id="output" placeholder="Select an output folder" aria-label="Output folder path"><button id="chooseOutput">Browse</button>
+</div>
+<label class="check"><input id="cleanNames" type="checkbox"> Clean up file names</label><label class="check"><input id="addConverted" type="checkbox" checked> Add “_converted” to unchanged filenames</label><label class="check"><input id="ownFolder" type="checkbox"> Place each movie in its own folder</label><p class="hint">Folders use the cleaned title and year, without edition labels. Enable filename cleanup as well for: Movie Title (2020)/Movie Title (2020) {Edition- Criterion Collection}.mkv. Existing movie folders are reused.</p>
+<fieldset id="namingControls">
+<legend>Movie &amp; TV naming</legend>
+<label>Content type<select id="contentType"><option value="auto">Auto · inspect filenames and folder context</option>
+<option value="movie">Treat as movies</option>
+<option value="tv">Treat as TV episodes</option></select></label><details><summary>TV renaming options</summary><label>TV filename style<select id="tvPattern"><option value="standard">Series - S01E02 - Episode Title</option>
+<option value="compact">Series S01E02 · compact</option>
+<option value="x">Series - 1x02 - Episode Title</option></select></label><label>TV output folders<select id="tvFolders"><option value="none">No additional TV folders</option>
+<option value="series">Series folder</option>
+<option value="season">Series / Season 01 folders</option></select></label><label class="check"><input id="tvKeepTitle" type="checkbox" checked> Keep detected episode title</label><label class="check"><input id="tvKeepYear" type="checkbox" checked> Keep detected series year</label></details><div class="button-row">
+<button id="previewNaming" type="button">Preview selected / sample name</button><button id="browseNamingSample" type="button">Browse sample</button>
+</div>
+<p class="hint">TV recognition supports S01E02, 1x02, multi-episode markers, air dates and numbered episodes in Season folders. TV naming styles apply when filename cleanup is enabled. Movie-folder naming applies only to movies; use the TV folder setting for series/seasons. Preview a representative sample first; mirrored parent folders are added separately. No online lookup is used.</p>
+</fieldset>
+<p class="hint" id="namePreview">Output files use “_converted” names. Existing files are never overwritten.</p>
+<p class="hint">Movie cleanup replaces dots with spaces and removes text after the last standalone year (1800–2099), puts parentheses around that year, and preserves recognized cut/edition labels after it. Without a year, only dots and repeated spaces are cleaned. Source files stay unchanged.</p>
+</div></section>
+<section class="tab-panel" id="panel-video" role="tabpanel" aria-labelledby="tab-video" tabindex="0" hidden=""><div class="section-title"><h2>Video settings</h2></div>
+<section class="video-basics content-card" aria-label="Video fundamentals"><div class="grid"><label>Video codec<select id="video"></select></label></div>
+<div class="quality-head">
+<label for="quality">Video quality</label><span id="qualityValue">CRF 23</span>
+</div>
+<input id="quality" type="range" min="0" max="51" value="23"><div class="range-labels">
+<span>Higher quality / larger</span><span>Smaller file</span>
+</div>
+<p class="hint" id="qualityHint">CRF controls quality; output size varies with your footage.</p>
+<div class="grid">
+<label>Encoding speed<select id="preset"><option value="ultrafast">Ultrafast</option>
+<option value="fast">Fast</option>
+<option value="medium" selected>Medium</option>
+<option value="slow">Slow · smaller files</option></select></label><label>Resolution<select id="scale"><option value="original">Keep original</option>
+<option value="2160">Up to 2160p</option>
+<option value="1080">Up to 1080p</option>
+<option value="720">Up to 720p</option>
+<option value="480">Up to 480p</option></select></label><label>Frame rate<select id="fps"><option value="original">Keep original</option>
+<option>24</option>
+<option>25</option>
+<option>30</option>
+<option>60</option></select></label>
+</div>
+</section><fieldset id="scanControls">
+<legend>Deinterlace &amp; telecine</legend>
+<div class="grid">
+<label>Scan correction<select id="scanMode"><option value="off">Off · preserve source</option>
+<option value="auto">Auto · sampled detection, BWDIF if interlaced</option>
+<option value="bwdif_frame">BWDIF · one frame per input frame</option>
+<option value="bwdif_field">BWDIF bob · one frame per field</option>
+<option value="yadif_frame">YADIF · one frame per input frame</option>
+<option value="yadif_field">YADIF bob · one frame per field</option>
+<option value="ivtc">3:2 inverse telecine · 29.97 → 23.976</option>
+<option value="fieldmatch">Field matching only · 2:2 material</option></select></label><label>Field order<select id="fieldOrder"><option value="auto">Auto</option>
+<option value="tff">Top field first</option>
+<option value="bff">Bottom field first</option></select></label>
+</div>
+<label class="check"><input id="detectInterlace" type="checkbox"> Detect and report interlace / repeated fields before each encode</label><div class="button-row">
+<button id="inspectScan" type="button">Analyze selected / sample file</button><button id="browseScanSample" type="button">Browse sample</button>
+</div>
+<p id="scanInfo" class="hint" role="status">Auto mode samples up to three scenes per file. Manual inspection samples the opening 300 frames. Detection is heuristic; possible telecine is reported for review, never automatically decimated.</p>
+<p class="hint">Use inverse telecine only for consistent 3:2 film cadence at about 29.97/30 fps. Mixed film/video needs individual inspection. Bob doubles the frame rate; keep the frame-rate setting at Original. Processing order: scan correction → HDR conversion → crop → resize → burned subtitles. Requires video encoding.</p>
+</fieldset>
+<fieldset id="performanceControls">
+<legend>CPU threads and parallel jobs</legend>
+<div class="grid">
+<label>CPU threads per encode<input id="cpuThreads" type="number" min="0" max="256" step="1" value="0"><small>0 = FFmpeg automatic</small></label><label>Concurrent CPU jobs<select id="cpuJobs"><option>1</option>
+<option>2</option>
+<option>3</option>
+<option>4</option>
+<option>5</option>
+<option>6</option>
+<option>7</option>
+<option>8</option></select></label><label>Concurrent GPU jobs<select id="gpuJobs"><option>1</option>
+<option>2</option>
+<option>3</option>
+<option>4</option>
+<option>5</option>
+<option>6</option>
+<option>7</option>
+<option>8</option></select></label>
+</div>
+<button id="applyPerformance" type="button">Apply queue limits</button><p class="hint" id="performanceInfo"></p>
+<p class="hint">Start with 1 job per device type. NVENC uses encoding sessions, not selectable GPU compute threads. CPU and GPU limits are independent and apply across the entire queue, regardless of GPU index. Stream-copy jobs use a CPU slot. Apply changes the queue limits now; starting a batch also applies them. Reducing a limit lets active jobs finish. CPU threads affect newly queued jobs and are an encoder/filter request, not a hard cap on all system threads.</p>
+</fieldset>
+<fieldset id="nvencControls" hidden>
+<legend>NVIDIA NVENC options</legend>
+<div class="grid">
+<label>NVENC preset<select id="nvPreset"><option value="auto">Encoder default</option>
+<option value="p1">P1 · fastest</option>
+<option value="p2">P2 · speed / quality</option>
+<option value="p3">P3 · speed / quality</option>
+<option value="p4" selected>P4 · balanced</option>
+<option value="p5">P5 · speed / quality</option>
+<option value="p6">P6 · speed / quality</option>
+<option value="p7">P7 · slowest / best quality</option></select></label>
+<label>Tuning<select id="nvTune"><option value="auto">Encoder default</option>
+<option value="hq">High quality</option>
+<option value="ll">Low latency</option>
+<option value="ull">Ultra low latency</option></select></label>
+<label>Rate control<select id="nvRate"><option value="cq">Constant quality · VBR-CQ</option>
+<option value="vbr">Variable bitrate · VBR</option>
+<option value="cbr">Constant bitrate · CBR</option>
+<option value="constqp">Constant quantizer · QP</option></select></label>
+<label>Target bitrate · Mbps<input id="nvBitrate" type="number" min="0.1" max="1000" step="0.1" value="5"></label>
+<label>Maximum bitrate · Mbps<input id="nvMaxrate" type="number" min="0" max="1000" step="0.1" value="0"><small>0 = uncapped / automatic</small></label>
+<label>VBV buffer · Mbits<input id="nvBuffer" type="number" min="0" max="4000" step="0.1" value="0"><small>0 = automatic</small></label>
+<label>NVENC multipass<select id="nvMultipass"><option value="auto">Encoder default</option>
+<option value="disabled">Single pass</option>
+<option value="qres">Two passes · quarter resolution</option>
+<option value="fullres">Two passes · full resolution</option></select></label>
+<label>Lookahead frames<select id="nvLookahead"><option value="auto">Encoder default</option>
+<option>0</option>
+<option>8</option>
+<option>16</option>
+<option>32</option></select></label>
+<label>B-frames<select id="nvBframes"><option value="auto">Encoder default</option>
+<option>0</option>
+<option>1</option>
+<option>2</option>
+<option>3</option>
+<option>4</option></select></label>
+<label>Keyframe interval · frames<select id="nvGop"><option value="auto">Encoder default</option>
+<option>24</option>
+<option>48</option>
+<option>60</option>
+<option>120</option>
+<option>240</option></select></label>
+<label>Adaptive quantization<select id="nvAQ"><option value="auto">Encoder default</option>
+<option value="off">Off</option>
+<option value="spatial">Spatial AQ</option>
+<option value="temporal">Temporal AQ</option></select></label>
+<label>Spatial AQ strength<select id="nvAQStrength"><option>1</option>
+<option>2</option>
+<option>3</option>
+<option>4</option>
+<option>5</option>
+<option>6</option>
+<option>7</option>
+<option selected>8</option>
+<option>9</option>
+<option>10</option>
+<option>11</option>
+<option>12</option>
+<option>13</option>
+<option>14</option>
+<option>15</option></select></label>
+<label>Bit depth<select id="nvDepth"><option value="8">8-bit · broad compatibility</option>
+<option value="10">10-bit · HEVC / AV1</option></select></label>
+<label>Video profile<select id="nvProfile"><option value="auto">Encoder default</option>
+<option value="baseline">H.264 Baseline</option>
+<option value="main">Main</option>
+<option value="high">H.264 High</option>
+<option value="main10">HEVC Main10</option></select></label>
+<label>NVIDIA GPU index<select id="nvGPU"><option value="auto">Auto select</option>
+<option>0</option>
+<option>1</option>
+<option>2</option>
+<option>3</option>
+<option>4</option>
+<option>5</option>
+<option>6</option>
+<option>7</option></select></label>
+</div>
+<p class="hint">CQ / QP uses the quality slider above. VBR / CBR uses target bitrate. CQ 0 means automatic quality. Multipass runs within NVENC; it is not file-level two-pass encoding. Auto leaves that option to the encoder. Hardware can impose additional limits.</p>
+<p class="hint" id="nvCapabilityNote"></p>
+</fieldset>
+<label class="check"><input id="autocrop" type="checkbox"> Auto detect and crop black borders</label><p class="hint">Samples multiple scenes per file before encoding; inspect results for mixed aspect ratios or very dark footage. Cropping requires video re-encoding.</p>
+<fieldset id="hdrControls">
+<legend>HDR / Dolby Vision conversion</legend>
+<div class="grid">
+<label>Color output<select id="hdrTarget"><option value="none">No HDR color conversion</option>
+<option value="hdr10">HDR10 · BT.2020 / PQ / 10-bit HEVC</option>
+<option value="sdr">SDR · tone-map to BT.709</option></select></label><label>Processing engine<select id="hdrEngine"><option value="auto">Auto · CPU or Dolby Vision libplacebo</option>
+<option value="cpu">CPU · HDR10/PQ base layer</option>
+<option value="libplacebo">libplacebo · Vulkan / Dolby Vision RPU</option></select></label><label>Tone-mapping algorithm<select id="hdrTone"><option value="hable">Hable</option>
+<option value="mobius">Mobius</option>
+<option value="reinhard">Reinhard</option></select></label><label>Source interpretation<select id="hdrSource"><option value="auto">Detect from metadata</option>
+<option value="pq">Assume BT.2020 / HDR10 PQ</option>
+<option value="dv5">Expect Dolby Vision profile 5</option></select></label><label>CPU source peak · nits<select id="hdrPeak"><option value="auto">Metadata / 1000 nit fallback</option>
+<option>1000</option>
+<option>4000</option>
+<option>10000</option></select></label>
+</div>
+<label class="check"><input id="dvBaseLayer" type="checkbox"> Use HDR10-compatible Dolby Vision base layer only (discard RPU/EL/FEL)</label><label class="check"><input id="hdrDefaultMaster" type="checkbox"> Allow BT.2020/D65 mastering defaults if missing (software x265 only)</label><button id="inspectHDR">Inspect selected source</button><button id="browseHDRSample">Browse sample video</button><p id="hdrSourceInfo" class="hint">Select a file or browse a sample under the track editors to inspect its HDR metadata.</p>
+<p id="hdrSupport" class="hint">HDR10 output requires 10-bit HEVC; SDR uses BT.709. Dolby Vision profile 5 requires decoded RPU metadata, libplacebo and Vulkan. Profile 7 / enhancement-layer sources require explicit compatible base-layer-only selection; full FEL reconstruction is not supported. SDR/unknown input is not relabeled as HDR.</p>
+</fieldset>
+<fieldset class="subtitle-settings">
+<legend>Subtitles</legend>
+<label>Subtitle streams<select id="subtitles"><option value="none">Do not include</option>
+<option value="forced">Include forced streams only</option>
+<option value="all">Include all subtitle streams</option>
+<option value="custom">Choose tracks / burn subtitles</option></select></label><label>SRT sidecar export<select id="exportSrt"><option value="none">No SRT export</option>
+<option value="all">Export all text subtitle tracks</option>
+<option value="forced">Export forced text tracks</option>
+<option value="custom">Choose tracks below</option></select></label><section id="subtitleEditor" hidden><h3>Subtitle tracks</h3>
+<div class="button-row">
+<button id="inspectSubtitles">Inspect first selected file</button><button id="browseSubtitleSample">Browse sample video</button>
+</div>
+<p id="subtitleSample" class="hint"></p>
+<div id="subtitleRules"></div>
+<p class="hint">Keep adds a selectable soft subtitle stream. Burn renders the track into the video; both can be selected together, and multiple tracks can be burned. Burn-in runs after HDR conversion, crop and resize. Bitmap subtitles default to fitting inside the cropped frame; original-coordinate placement is also available. Rules use subtitle track positions throughout the batch; a missing track stops the queue. Bitmap soft subtitles require MKV. Burned subtitles cannot be turned off during playback.</p></section><p class="hint">Keeps the first video track. Forced-only mode uses the source forced flags. Choose all streams or custom track selection for other subtitles. MKV preserves text and bitmap soft subtitles; MP4 / MOV / WebM need compatible text subtitles. Burned tracks become part of the video.</p>
+<p class="hint">SRT files are saved beside the completed video using its final basename, language and source track number. Bitmap tracks need OCR; automatic export skips them with a notice. SRT preserves text and timing, but may lose source styling.</p>
+</fieldset></section><section id="panel-audio" role="tabpanel" aria-labelledby="tab-audio" class="tab-panel" tabindex="0" hidden=""><div class="section-title"><h2>Audio settings</h2></div>
+<p class="tab-description">Preserve the original, build a compatible mix, or give every track its own outputs.</p>
+<label>Audio configuration<select id="audioMode"><option value="global">Same settings for selected tracks</option>
+<option value="perTrack">Different settings / multiple outputs per track</option></select></label><div class="grid">
+<label>Audio codec<select id="audio"></select></label><label>Audio bitrate<select id="bitrate"><option>96</option>
+<option>128</option>
+<option selected>192</option>
+<option>256</option>
+<option>320</option>
+<option>384</option>
+<option>448</option>
+<option>512</option>
+<option>640</option>
+<option>768</option>
+<option>1024</option></select><small>kbps</small></label><label>Audio tracks<select id="audioTracks"><option value="all">All audio tracks</option>
+<option value="first">First audio track</option></select></label><label>Audio channels<select id="channels"><option value="original">Preserve source channels</option>
+<option value="2">Downmix to stereo</option>
+<option value="6">Convert to 5.1 (6 channels)</option></select></label>
+</div>
+<p class="hint">Audio settings apply to every selected audio track. AC-3 / E-AC-3 support up to 5.1 here. “Convert to 5.1” does not create real surround from stereo.</p>
+<section id="audioEditor" hidden><h3>Per-track audio outputs</h3>
+<p class="hint">Inspect a sample file to identify its audio tracks. Rules use audio track positions (track 1, track 2, …) in every file of the batch. Use separate batches for files with different layouts. A required track missing from a file stops the queue.</p>
+<div class="button-row">
+<button id="inspectSelected">Inspect first selected file</button><button id="browseAudioSample">Browse sample video</button>
+</div>
+<p id="audioSample" class="hint"></p>
+<div id="audioRules"></div>
+<button id="addAudioRule">＋ Add track rule</button><label>Tracks without a rule<select id="audioFallback"><option value="copy">Keep original (stream copy)</option>
+<option value="drop">Do not include</option></select></label><p class="hint">Each output can copy the original or encode independently. Add an AAC output beside an original copy, for example. Removing every output from a rule drops that source track. Output settings apply only to that output; copy requires original channels.</p></section></section>
+<section id="panel-admin" role="tabpanel" aria-labelledby="tab-admin" class="tab-panel" tabindex="0" hidden><div class="section-title"><h2>Admin</h2></div>
+<p class="tab-description">Configure email notifications for conversion failures and completed queues.</p>
+<section class="notifications"><div class="section-title"><h3>Email notifications</h3></div>
+<label class="check"><input id="mailEnabled" type="checkbox"> Enable email notifications</label><div class="button-row mail-toggles">
+<label class="check"><input id="mailFailure" type="checkbox" checked> File failure / low disk stop</label><label class="check"><input id="mailFinished" type="checkbox" checked> Queue finished</label>
+</div>
+<div class="grid">
+<label>SMTP server<input id="mailHost" placeholder="smtp.example.com" autocomplete="off"></label><label>SMTP port<input id="mailPort" type="number" min="1" max="65535" value="587"></label><label>Security<select id="mailTLS"><option value="starttls">STARTTLS · usually port 587</option>
+<option value="ssl">TLS · usually port 465</option>
+<option value="none">None · trusted local relay</option></select></label><label>SMTP username<input id="mailUsername" autocomplete="off"></label><label>Sender address<input id="mailSender" type="email" placeholder="frameforge@example.com"></label><label>Recipient addresses<input id="mailRecipients" placeholder="you@example.com, other@example.com"></label><label>SMTP password<input id="mailPassword" type="password" autocomplete="new-password" placeholder="Session only; or use environment variable"></label>
+</div>
+<p class="hint">All email settings support FRAMEFORGE_SMTP_ environment variables; see .env.example. Non-empty environment values override saved Admin settings. Restart after changing them.</p>
+<p class="hint" id="mailPasswordState">Passwords are kept only in server memory for this session. Set FRAMEFORGE_SMTP_PASSWORD for persistent credentials. Email settings and delivery history are stored locally.</p>
+<div class="button-row">
+<button id="saveMail" class="primary">Save email settings</button><button id="testMail">Save and send test email</button>
+</div>
+<div id="mailHistory" class="hint" role="status"></div></section></section>
+</div>
+<div class="launch">
+<div>
+<strong id="ready">Ready when you are.</strong><p>Settings apply to this batch. You can add more while jobs run.</p>
+</div>
+<button class="primary start" id="start">Queue batch <span>→</span></button>
+</div>
+<div id="message" role="status" aria-live="polite"></div>
+</div>
+<section class="panel queue" aria-label="Batch queue"><div id="queueStatus" class="queue-notice" role="status"></div>
+<div class="button-row queue-controls">
+<button id="pauseQueue">Pause new jobs</button><button id="resumeQueue" class="primary">Resume queue</button><button id="retryFailed">Retry failed files</button>
+</div>
+<p class="hint">Stops starting new jobs on a failed file; active files finish. All active jobs stop when the output drive has less than 4 GB free. Disk space is checked before encoding and every 0.5 seconds while a job runs. Resume is manual; low-space files restart from the beginning.</p>
+<div class="section-title">
+<span class="step">04</span><h2>Conversion queue</h2>
+<span class="muted" id="queueCount">0 files</span><div class="queue-actions">
+<button id="cancelAll">Stop batch</button><button id="clear">Clear finished</button>
+</div>
+</div>
+<div id="queue"><div class="empty">
+<span>≋</span><p>Your next batch starts here.</p>
+<small>Add videos above to get things moving.</small>
+</div></div></section>
+</div>
+<footer>ANDY'S FRAMEFORGE <span>Built around FFmpeg. Designed to stay out of your way.</span><span>LOCAL / PRIVATE / SIMPLE</span></footer></main>
+<dialog id="browser"><div class="modal-head">
+<h2 id="browseTitle">Choose files</h2>
+<button id="closeBrowser" aria-label="Close browser">✕</button>
+</div>
+<div class="path-row">
+<button id="up">↑ Up</button><input id="browsePath" aria-label="Browse folder path"><button id="go">Go</button>
+</div>
+<p class="hint">Browse your computer, or enter a full path (including a drive letter on Windows).</p>
+<div id="entries"></div>
+<div class="modal-bottom">
+<span id="selectionCount">0 selected</span><button class="primary" id="selectBrowser">Use selection</button>
+</div>
+<p id="browseError" role="alert"></p></dialog><script src="/app.js"></script>
+</body>
+</html>

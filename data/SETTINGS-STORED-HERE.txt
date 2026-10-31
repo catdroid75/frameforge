@@ -1,0 +1,2 @@
+Docker stores settings.sqlite3 here. Keep this directory writable by the container user.
+Do not delete it when updating the app. Back up settings.sqlite3 while the app is stopped.

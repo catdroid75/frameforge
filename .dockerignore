@@ -1,0 +1,16 @@
+*
+!app.py
+!audio.py
+!storage.py
+!hdr.py
+!subtitles.py
+!static/
+!static/**
+
+!VERSION
+
+!auth.py
+
+!scan.py
+
+!naming.py

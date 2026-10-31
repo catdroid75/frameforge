@@ -1,0 +1,36 @@
+# Secrets and local overrides
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Python caches and local environments
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Local databases, media, staging and generated release archives
+*.sqlite
+*.sqlite3
+*.sqlite3-*
+*.db
+*.zip
+/input/*
+!/input/PLACE-VIDEOS-HERE.txt
+/output/*
+!/output/CONVERTED-VIDEOS-GO-HERE.txt
+/data/*
+!/data/SETTINGS-STORED-HERE.txt
+**/_FFtmp/
+.frameforge-*
+
+# Editor and OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Superseded artwork (the current logo is tracked)
+/static/andys-*.png
