@@ -585,7 +585,7 @@ class Handler(BaseHTTPRequestHandler):
         if not self.trusted(): return self.reply({'error':'Local access only'},403)
         u=urlparse(self.path)
         if u.path=='/healthz': return self.reply({'ok':True})
-        public={'/login','/login.js','/style.css','/logo.png','/logo-dark.png'}
+        public={'/login','/login.js','/style.css','/logo.png','/logo-dark.png','/favicon.ico','/favicon.png'}
         if u.path not in public and not auth.authenticated(self.headers.get('Cookie')):
             if u.path=='/': return self.redirect_login()
             return self.reply({'error':'Sign in required'},401)
@@ -602,11 +602,11 @@ class Handler(BaseHTTPRequestHandler):
                         if x.is_dir() or x.suffix.lower() in EXTS: entries.append({'name':x.name,'path':str(x),'directory':x.is_dir(),'size':x.stat().st_size if x.is_file() else 0})
                     except OSError: pass
                 return self.reply({'path':str(p),'parent':str(p.parent),'entries':entries})
-            files={'/login':'login.html','/login.js':'login.js','/':'index.html','/app.js':'app.js','/style.css':'style.css','/logo.png':'frameforge-logo.png','/logo-dark.png':'frameforge-logo.png'}
+            files={'/favicon.ico':'favicon.ico','/favicon.png':'favicon.png','/login':'login.html','/login.js':'login.js','/':'index.html','/app.js':'app.js','/style.css':'style.css','/logo.png':'frameforge-logo.png','/logo-dark.png':'frameforge-logo.png'}
             if u.path not in files: return self.reply({'error':'Not found'},404)
             data=(ROOT/'static'/files[u.path]).read_bytes()
             if u.path=='/login': data=data.replace(b'__LOGIN_TOKEN__',TOKEN.encode()).replace(b'__VERSION__',VERSION.encode())
-            self.send_response(200); self.send_header('Content-Type',{'/login':'text/html','/login.js':'text/javascript','/':'text/html','/app.js':'text/javascript','/style.css':'text/css','/logo.png':'image/png','/logo-dark.png':'image/png'}[u.path]); self.send_header('Content-Length',str(len(data))); self.send_header('X-Content-Type-Options','nosniff'); self.end_headers(); self.wfile.write(data)
+            self.send_response(200); self.send_header('Content-Type',{'/favicon.ico':'image/vnd.microsoft.icon','/favicon.png':'image/png','/login':'text/html','/login.js':'text/javascript','/':'text/html','/app.js':'text/javascript','/style.css':'text/css','/logo.png':'image/png','/logo-dark.png':'image/png'}[u.path]); self.send_header('Content-Length',str(len(data))); self.send_header('X-Content-Type-Options','nosniff'); self.end_headers(); self.wfile.write(data)
         except Exception as e: self.reply({'error':str(e)},400)
     def do_POST(self):
         if not self.trusted() or self.headers.get('X-Token')!=TOKEN: return self.reply({'error':'Invalid local session'},403)

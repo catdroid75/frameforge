@@ -2,7 +2,7 @@ name: frameforge
 services:
   frameforge:
     build: .
-    image: frameforge:0.9.0-beta.7
+    image: frameforge:0.9.0-beta.8
     init: true
     restart: unless-stopped
     ports:

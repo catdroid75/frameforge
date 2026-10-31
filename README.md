@@ -1,6 +1,6 @@
 # FrameForge
 
-Current release: **0.9.0-beta.7**. See [CHANGELOG.md](CHANGELOG.md).
+Current release: **0.9.0-beta.8**. See [CHANGELOG.md](CHANGELOG.md).
 
 A local batch video converter with a browser interface. **No pip packages, npm packages, build tools, CDN scripts, external accounts, or uploads.** Runtime dependencies: Python 3.10+ and FFmpeg with ffprobe on PATH. Conversion works offline. Optional email notifications use your configured SMTP server. Named presets and mail configuration use SQLite, included with Python.
 
@@ -315,17 +315,17 @@ These PowerShell variables apply to that terminal and child processes only. The 
 
 `VERSION` is the authoritative application version. It is displayed in the browser header/title, returned as `version` by `/api/state`, printed at startup, and available without FFmpeg through `python app.py --version`. Docker copies this same file into the image.
 
-Current beta **0.9.0-beta.7**: the main features and login are implemented, and NVENC encoding is confirmed working by the user; Docker build/start and Dolby Vision visual validation remain outstanding in this development environment. Earlier packages have no formal version and are not retroactively assigned release numbers. After validation and remaining beta fixes, release **1.0.0**.
+Current beta **0.9.0-beta.8**: the main features and login are implemented, and NVENC encoding is confirmed working by the user; Docker build/start and Dolby Vision visual validation remain outstanding in this development environment. Earlier packages have no formal version and are not retroactively assigned release numbers. After validation and remaining beta fixes, release **1.0.0**.
 
-Use semantic versioning: PATCH for compatible fixes, MINOR for compatible features, MAJOR for breaking changes. During the beta, increment the prerelease suffix (`0.9.0-beta.7`, etc.) for stabilization; use `0.10.0-beta.1` for a new beta feature cycle. This application version is separate from SQLite schema changes and file revision history.
+Use semantic versioning: PATCH for compatible fixes, MINOR for compatible features, MAJOR for breaking changes. During the beta, increment the prerelease suffix (`0.9.0-beta.8`, etc.) for stabilization; use `0.10.0-beta.1` for a new beta feature cycle. This application version is separate from SQLite schema changes and file revision history.
 
 Release checklist: update `VERSION`, add a dated CHANGELOG entry, run the relevant tests, and package as `FrameForge-<version>.zip`. Build a traceable Docker image with:
 
 ```sh
-docker build -t frameforge:0.9.0-beta.7 -t frameforge:local .
+docker build -t frameforge:0.9.0-beta.8 -t frameforge:local .
 ```
 
-Compose uses the versioned `frameforge:0.9.0-beta.7` tag. In Portainer you can use `image: frameforge:0.9.0-beta.7` after building that tag on the target Docker host. Recreate containers after rebuilding; preserve the mounted data folder.
+Compose uses the versioned `frameforge:0.9.0-beta.8` tag. In Portainer you can use `image: frameforge:0.9.0-beta.8` after building that tag on the target Docker host. Recreate containers after rebuilding; preserve the mounted data folder.
 
 ## Desktop workspace and output layout
 

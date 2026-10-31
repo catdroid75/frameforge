@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.9.0-beta.8 — 2026-10-31
+
+- Use the logo glyph as a multi-resolution favicon on the workspace and token login page.
+- Offset the identity with white/light and near-black/dark header backgrounds, plus a light logo backing that preserves the charcoal details.
+
+
 ## 0.9.0-beta.7 — 2026-10-31
 
 - Make the _converted suffix optional for filenames that are not cleaned.

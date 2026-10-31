@@ -35,3 +35,6 @@ body:has(.app-main){min-width:1180px}body:has(.app-main)>header{height:88px;padd
 .app-main #scanControls{margin:22px 0;padding:20px;border:1px solid var(--line);border-radius:9px;background:var(--surface);min-width:0}.app-main #scanControls .button-row{justify-content:flex-start;margin-top:12px}
 
 .app-main #namingControls{margin:20px 0;padding:16px;border:1px solid var(--line);border-radius:9px;background:var(--surface);min-width:0}.app-main #namingControls label{margin-top:12px}.app-main #namingControls summary{cursor:pointer;margin:14px 0;color:var(--accent)}.app-main #namingControls .button-row{flex-wrap:wrap;justify-content:flex-start;margin-top:14px}
+
+/* Give the orange/charcoal identity a distinct, high-contrast header. */
+:root{--header-bg:#ffffff;--header-line:#d5c4b4}:root[data-theme="dark"]{--header-bg:#080a0d;--header-line:#494039}body:has(.app-main)>header{background:var(--header-bg);border-bottom:1px solid var(--header-line);box-shadow:0 3px 18px #0000000d}header .brand{background:#fff8ef;border:1px solid #ead9c6;border-radius:9px;padding:3px 10px}header .brand-logo{max-height:70px}header .app-version{color:var(--accent);background:var(--accent-soft);border:1px solid var(--line)}
